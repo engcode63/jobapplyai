@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage
+    x:Class="JobApplyAI.Mobile.Views.DashboardPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:vm="clr-namespace:JobApplyAI.Mobile.ViewModels"
+    x:DataType="vm:DashboardViewModel"
+    Title="NextRoleAI">
+
+    <RefreshView Command="{Binding LoadCommand}" IsRefreshing="{Binding IsBusy}">
+        <ScrollView>
+            <VerticalStackLayout Padding="20" Spacing="16">
+                <Label Text="Welcome back" FontSize="22" FontAttributes="Bold" />
+                <Label Text="Your job search, at a glance." FontSize="14" TextColor="Gray" />
+
+                <Frame BorderColor="LightGray" Padding="16" Margin="0,10,0,0">
+                    <Grid ColumnDefinitions="*,*">
+                        <VerticalStackLayout Grid.Column="0" HorizontalOptions="Center">
+                            <Label Text="{Binding ResumeCount}" FontSize="32" FontAttributes="Bold" HorizontalTextAlignment="Center" />
+                            <Label Text="Master resumes" FontSize="12" HorizontalTextAlignment="Center" />
+                        </VerticalStackLayout>
+                        <VerticalStackLayout Grid.Column="1" HorizontalOptions="Center">
+                            <Label Text="{Binding ApplicationCount}" FontSize="32" FontAttributes="Bold" HorizontalTextAlignment="Center" />
+                            <Label Text="Applications tracked" FontSize="12" HorizontalTextAlignment="Center" />
+                        </VerticalStackLayout>
+                    </Grid>
+                </Frame>
+
+                <Label Text="{Binding StatusMessage}" TextColor="Crimson" />
+
+                <Label Text="Quick tips" FontAttributes="Bold" Margin="0,10,0,0" />
+                <Label Text="1. Upload your master resume in the Resumes tab." />
+                <Label Text="2. Search and save jobs in the Job Search tab." />
+                <Label Text="3. Track applications and generate tailored resumes/cover letters in the Applications tab." />
+                <Label Text="4. Practice with AI mock interview questions in Interview Prep." />
+
+                <Button Text="Refresh" Command="{Binding LoadCommand}" Margin="0,10,0,0" />
+            </VerticalStackLayout>
+        </ScrollView>
+    </RefreshView>
+
+</ContentPage>

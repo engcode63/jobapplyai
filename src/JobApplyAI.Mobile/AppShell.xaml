@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Shell
+    x:Class="JobApplyAI.Mobile.AppShell"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:views="clr-namespace:JobApplyAI.Mobile.Views"
+    FlyoutBehavior="Flyout"
+    Title="NextRoleAI">
+
+    <FlyoutItem Title="Dashboard">
+        <ShellContent ContentTemplate="{DataTemplate views:DashboardPage}" Route="Dashboard" />
+    </FlyoutItem>
+
+    <FlyoutItem Title="Resumes">
+        <ShellContent ContentTemplate="{DataTemplate views:ResumesPage}" Route="Resumes" />
+    </FlyoutItem>
+
+    <FlyoutItem Title="Job Search">
+        <ShellContent ContentTemplate="{DataTemplate views:JobSearchPage}" Route="JobSearch" />
+    </FlyoutItem>
+
+    <FlyoutItem Title="Applications">
+        <ShellContent ContentTemplate="{DataTemplate views:ApplicationsPage}" Route="Applications" />
+    </FlyoutItem>
+
+    <FlyoutItem Title="Cover Letters">
+        <ShellContent ContentTemplate="{DataTemplate views:CoverLettersPage}" Route="CoverLetters" />
+    </FlyoutItem>
+
+    <FlyoutItem Title="Interview Prep">
+        <ShellContent ContentTemplate="{DataTemplate views:InterviewPrepPage}" Route="InterviewPrep" />
+    </FlyoutItem>
+
+    <FlyoutItem Title="Settings">
+        <ShellContent ContentTemplate="{DataTemplate views:SettingsPage}" Route="Settings" />
+    </FlyoutItem>
+
+</Shell>

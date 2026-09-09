@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage
+    x:Class="JobApplyAI.Mobile.Views.InterviewPrepPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:vm="clr-namespace:JobApplyAI.Mobile.ViewModels"
+    xmlns:entities="clr-namespace:JobApplyAI.Core.Entities;assembly=JobApplyAI.Core"
+    x:DataType="vm:InterviewPrepViewModel"
+    Title="Interview Prep">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="16" Spacing="10">
+            <Label Text="Pick a saved job posting to start a mock interview." />
+            <Picker Title="Job posting" ItemsSource="{Binding Postings}" ItemDisplayBinding="{Binding Title}" SelectedItem="{Binding SelectedPosting}" />
+            <Button Text="Start interview" Command="{Binding StartCommand}" />
+            <Button Text="Load saved job postings" Command="{Binding LoadPostingsCommand}" />
+            <Label Text="{Binding StatusMessage}" TextColor="CornflowerBlue" />
+
+            <BoxView HeightRequest="1" Color="LightGray" Margin="0,10" />
+
+            <VerticalStackLayout IsVisible="{Binding Session}" Spacing="8">
+                <Label Text="Current question" FontAttributes="Bold" />
+                <Label Text="{Binding CurrentQuestion.Question}" />
+                <Editor Placeholder="Type your answer here..." Text="{Binding CurrentAnswer}" HeightRequest="120" />
+                <Button Text="Submit answer" Command="{Binding SubmitAnswerCommand}" />
+            </VerticalStackLayout>
+
+            <VerticalStackLayout IsVisible="{Binding Session.IsComplete}" Spacing="8" Margin="0,10,0,0">
+                <Label Text="Session complete" FontAttributes="Bold" />
+                <Label Text="{Binding Session.OverallFeedback}" LineBreakMode="WordWrap" />
+            </VerticalStackLayout>
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

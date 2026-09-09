@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage
+    x:Class="JobApplyAI.Mobile.Views.ResumesPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:vm="clr-namespace:JobApplyAI.Mobile.ViewModels"
+    xmlns:entities="clr-namespace:JobApplyAI.Core.Entities;assembly=JobApplyAI.Core"
+    x:DataType="vm:ResumesViewModel"
+    Title="Resumes">
+
+    <Grid RowDefinitions="Auto,Auto,*" Padding="16" RowSpacing="10">
+        <Button Grid.Row="0" Text="Upload resume" Command="{Binding UploadCommand}" />
+        <Label Grid.Row="1" Text="{Binding StatusMessage}" TextColor="CornflowerBlue" />
+
+        <RefreshView Grid.Row="2" Command="{Binding LoadCommand}" IsRefreshing="{Binding IsBusy}">
+            <CollectionView ItemsSource="{Binding Resumes}">
+                <CollectionView.EmptyView>
+                    <Label Text="No resumes yet. Upload your master resume to get started." Margin="0,20,0,0" HorizontalTextAlignment="Center" />
+                </CollectionView.EmptyView>
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="entities:Resume">
+                        <Frame Margin="0,4" Padding="12" BorderColor="LightGray">
+                            <VerticalStackLayout Spacing="4">
+                                <Label Text="{Binding FileName}" FontAttributes="Bold" />
+                                <Label Text="{Binding IsMaster, StringFormat='Master resume: {0}'}" FontSize="12" TextColor="Gray" />
+                                <Label Text="{Binding CreatedUtc, StringFormat='Uploaded {0:d}'}" FontSize="12" TextColor="Gray" />
+                            </VerticalStackLayout>
+                        </Frame>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </RefreshView>
+    </Grid>
+
+</ContentPage>

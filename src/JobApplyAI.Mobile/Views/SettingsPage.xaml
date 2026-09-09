@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage
+    x:Class="JobApplyAI.Mobile.Views.SettingsPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:vm="clr-namespace:JobApplyAI.Mobile.ViewModels"
+    x:DataType="vm:SettingsViewModel"
+    Title="Settings">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="16" Spacing="10">
+            <Label Text="API connection" FontAttributes="Bold" />
+            <Label FontSize="12" TextColor="Gray"
+                   Text="Point this at your JobApplyAI.Functions host. Android emulator: keep 10.0.2.2. Physical device or iOS simulator: use your machine's LAN IP or a deployed Functions App URL." />
+            <Entry Placeholder="http://10.0.2.2:7071/api" Text="{Binding ApiBaseUrl}" />
+
+            <HorizontalStackLayout Spacing="8">
+                <Button Text="Save" Command="{Binding SaveCommand}" />
+                <Button Text="Test connection" Command="{Binding TestConnectionCommand}" />
+                <Button Text="Reset to default" Command="{Binding ResetToDefaultCommand}" />
+            </HorizontalStackLayout>
+
+            <Label Text="{Binding ConnectionStatus}" TextColor="CornflowerBlue" />
+
+            <BoxView HeightRequest="1" Color="LightGray" Margin="0,10" />
+            <Label Text="About" FontAttributes="Bold" />
+            <Label Text="NextRoleAI helps you tailor resumes and cover letters, search AU/NZ jobs, track applications and practice interviews - all powered by the same AI backend as the web app." FontSize="13" LineBreakMode="WordWrap" />
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

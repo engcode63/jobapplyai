@@ -13,6 +13,7 @@ Not a clone of any third-party product — built from scratch on Blazor Server +
 
 ```
 JobApplyAI.Web (Blazor Server, MudBlazor UI, Azure Container Apps)
+JobApplyAI.Mobile (.NET MAUI, Android + iOS, talks to the same Functions API)
 JobApplyAI.Functions (Azure Functions isolated worker, .NET 8, HTTP API for external/mobile clients)
         |
         v
@@ -27,7 +28,7 @@ JobApplyAI.Core (domain entities/enums, no external dependencies)
 
 Both the Blazor Web host and the Functions host register **identical** Application/Infrastructure
 DI wiring, so business logic isn't duplicated — Functions exists to serve non-Blazor clients
-(future mobile app, automation, etc.) against the same Cosmos DB data and AI services.
+(the mobile app, automation, etc.) against the same Cosmos DB data and AI services.
 
 ## Features implemented (v1 scaffold)
 
@@ -200,6 +201,52 @@ postings, tailor a resume, generate a cover letter, run a mock interview - all b
 resource exists. As soon as you fill in real Cosmos/AI Foundry/Entra values, the app
 transparently switches to the real backends with no code changes.
 
+## Mobile app (Android + iOS)
+
+`src/JobApplyAI.Mobile` is a .NET MAUI app covering the same six core flows as the web app —
+Dashboard, Resumes (upload + list), Job Search (search + save), Applications (track status, tailor
+resume, generate cover letter), Cover Letters, and Interview Prep — talking to the exact same
+`JobApplyAI.Functions` HTTP API the Blazor web app's Functions host exposes. It shares
+`JobApplyAI.Core`'s entities directly as DTOs (no duplicate model layer to maintain).
+
+**Note on target frameworks:** every other project in this solution targets `net8.0`. The mobile
+app targets `net10.0-android`/`net10.0-ios`/`net10.0-maccatalyst` instead, because only the
+`10.0.100`-banded mobile workloads were available to install in this environment — `net8.0-android`
+etc. are past their MAUI support window and the SDK refuses to build them. This is fine
+architecturally since `JobApplyAI.Core` has zero external dependencies, so it can be referenced
+from a newer TFM without issue; just don't be surprised the Mobile project's TFMs don't match the
+rest of the solution.
+
+### Running it
+
+```powershell
+cd src\JobApplyAI.Mobile
+dotnet build -f net10.0-android
+```
+
+1. Start the Functions API locally first (`cd src\JobApplyAI.Functions; func start`), same as for
+   local web development — the mobile app talks to it over plain HTTP.
+2. Deploy to an Android emulator from Visual Studio (or `dotnet build -t:Run -f net10.0-android`).
+   The app defaults to `http://10.0.2.2:7071/api` as its API base URL — `10.0.2.2` is the Android
+   emulator's alias for the host machine's `localhost`, so this works out of the box against a
+   local `func start`.
+3. On a physical device, or for iOS, open the in-app **Settings** page and change the API base URL
+   to your machine's real LAN IP (or a deployed Functions App URL) — no rebuild required, it's
+   saved via `Preferences` and takes effect immediately. There's a "Test connection" button that
+   pings `/health` to confirm it's reachable.
+4. Like the web app, if the Functions host is running with `EntraExternalId:RequireAuthentication`
+   left `false`, everything works immediately as the same shared `demo-user` identity — no sign-in
+   screen exists in the mobile app yet (see below).
+
+**iOS build limitation:** this environment is Windows-only, so iOS/MacCatalyst can be restored
+(`dotnet restore`) but not fully built, packaged, or run here — that requires a Mac with Xcode, or
+a remote build service (GitHub Actions macOS runner, Codemagic, App Center, etc.). The project is
+otherwise iOS-ready; it just needs a Mac-based build step to produce an actual `.ipa`.
+
+**Not yet built:** real sign-in (would need a second, public-client Entra External ID app
+registration distinct from the Web app's confidential-client one, plus MSAL), push notifications,
+and offline caching. All are natural follow-ups once the demo-mode flows above are validated.
+
 ## Deploying infrastructure
 
 ```powershell
@@ -257,4 +304,7 @@ to `main`.
   TypeScript/JS) — not part of this Blazor/Functions solution.
 - **Rate limiting / cost controls** on AI endpoints (Azure OpenAI calls are billed per token) —
   not yet implemented; recommended before opening this up to unlimited public sign-ups.
+- **Mobile app**: ✅ **Android + iOS MAUI app implemented** (see "Mobile app" section above),
+  covering all six core web flows against the same Functions API. Real sign-in (MSAL), push
+  notifications, and offline caching are not yet built.
 

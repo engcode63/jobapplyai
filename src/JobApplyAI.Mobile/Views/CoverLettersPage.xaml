@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage
+    x:Class="JobApplyAI.Mobile.Views.CoverLettersPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:vm="clr-namespace:JobApplyAI.Mobile.ViewModels"
+    xmlns:entities="clr-namespace:JobApplyAI.Core.Entities;assembly=JobApplyAI.Core"
+    x:DataType="vm:CoverLettersViewModel"
+    Title="Cover Letters">
+
+    <RefreshView Command="{Binding LoadCommand}" IsRefreshing="{Binding IsBusy}">
+        <CollectionView ItemsSource="{Binding Letters}" Margin="16">
+            <CollectionView.EmptyView>
+                <Label Text="No cover letters yet. Generate one from the Applications tab." Margin="0,20,0,0" HorizontalTextAlignment="Center" />
+            </CollectionView.EmptyView>
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="entities:CoverLetter">
+                    <Frame Margin="0,4" Padding="12" BorderColor="LightGray">
+                        <VerticalStackLayout Spacing="6">
+                            <Label Text="{Binding CreatedUtc, StringFormat='Generated {0:g}'}" FontSize="12" TextColor="Gray" />
+                            <Label Text="{Binding Content}" LineBreakMode="WordWrap" />
+                        </VerticalStackLayout>
+                    </Frame>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+    </RefreshView>
+
+</ContentPage>
