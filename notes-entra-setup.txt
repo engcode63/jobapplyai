@@ -1,0 +1,39 @@
+Entra External ID setup - what I still need from you
+--------------------------------------------------------
+
+Same deal as the Foundry note - the login flow in the app is wired up and ready, it's just
+pointing at nothing right now. To make sign-in actually work I need a few things from you on the
+Entra side.
+
+1. A CIAM tenant
+   "Entra External ID" - if you don't already have one set up, you create it from the Azure
+   Portal as its own resource (search for "Microsoft Entra External ID" when creating a
+   resource). If your org already has one for other apps we can just reuse it.
+
+2. An app registration inside that tenant, with:
+   - Redirect URI set to https://your-web-app-hostname/signin-oidc
+   - Front-channel logout URL set to https://your-web-app-hostname/signout-callback-oidc
+   - A client secret generated for it (or a certificate if you'd rather not deal with secrets)
+
+3. Three values off that app registration, once it exists:
+   - The CIAM authority, looks like https://your-tenant-name.ciamlogin.com/
+   - The Tenant ID
+   - The Client ID and Client Secret
+
+Once you've got those, they go into the EntraExternalId section of appsettings.json (or Key
+Vault / App Configuration if we're doing this properly in production rather than locally).
+
+That's really it for basic email/password sign-in. If you also want people to be able to log in
+with Google, Microsoft, or LinkedIn accounts instead of just email, that's a separate bit of
+setup on the tenant side (adding identity providers + a user flow) - I already covered that in
+the README under "Enabling social sign-in" since it's more of a how-to than something I need
+from you specifically.
+
+Also worth flagging - the Functions API needs its own token validation config
+(EntraExternalId:Authority / Audience), which is a bit more involved since it usually means
+exposing an API scope on the app registration so the Blazor app can request a token for it
+rather than just reusing its own sign-in token. Happy to walk through that with you once the
+tenant/app registration above exists - no point configuring it before that.
+
+Let me know once you've got a tenant and app registration going and I'll help plug the values in
+and test the login flow.

@@ -77,21 +77,7 @@ stub ready to wire up real HTTP calls if/when Seek partner API access is obtaine
 
 > Azure AI Foundry setup notes have moved to `notes-azure-foundry-setup.txt` in the repo root.
 
-## What I need from you: Microsoft Entra External ID configuration
-
-For user authentication in the Blazor Web app:
-
-1. An **Entra External ID (CIAM) tenant** — either an existing one or a new one created via the
-   Azure Portal ("Microsoft Entra External ID" resource).
-2. An **app registration** in that tenant, with:
-   - Redirect URI: `https://<your-web-app-hostname>/signin-oidc`
-   - Front-channel logout URL: `https://<your-web-app-hostname>/signout-callback-oidc`
-   - A client secret (or configure certificate-based auth if preferred)
-3. The tenant's **CIAM authority URL** (`https://<tenant-name>.ciamlogin.com/`), **Tenant ID**,
-   and the app registration's **Client ID** + **Client Secret**.
-
-Populate these into the `EntraExternalId` section of `appsettings.json` (or Key Vault/App
-Configuration in production).
+> Entra External ID setup notes have moved to `notes-entra-setup.txt` in the repo root.
 
 ### Enabling social sign-in (Google, Microsoft Account, LinkedIn)
 
