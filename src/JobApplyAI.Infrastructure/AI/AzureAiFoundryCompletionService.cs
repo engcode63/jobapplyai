@@ -5,6 +5,9 @@ using JobApplyAI.Application.Interfaces;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using OpenAI.Chat;
+using Polly;
+using Polly.Retry;
+using Polly.Timeout;
 
 namespace JobApplyAI.Infrastructure.AI;
 
@@ -17,6 +20,7 @@ public class AzureAiFoundryCompletionService : IAiCompletionService
     private readonly ChatClient _chatClient;
     private readonly AzureAiFoundryOptions _options;
     private readonly ILogger<AzureAiFoundryCompletionService> _logger;
+    private readonly ResiliencePipeline _resiliencePipeline;
 
     public AzureAiFoundryCompletionService(
         IOptions<AzureAiFoundryOptions> options,
@@ -30,7 +34,27 @@ public class AzureAiFoundryCompletionService : IAiCompletionService
             : new AzureOpenAIClient(new Uri(_options.Endpoint), new AzureKeyCredential(_options.ApiKey));
 
         _chatClient = client.GetChatClient(_options.ChatDeploymentName);
+
+        // Azure OpenAI regularly returns 429 (rate limit) and transient 5xx responses under
+        // load; retry those a few times with exponential backoff + jitter before giving up, and
+        // bound the total time any single call can take so a stuck request can't hang a page
+        // load or a background job indefinitely.
+        _resiliencePipeline = new ResiliencePipelineBuilder()
+            .AddRetry(new RetryStrategyOptions
+            {
+                ShouldHandle = new PredicateBuilder().Handle<RequestFailedException>(IsTransient)
+                    .Handle<TimeoutRejectedException>(),
+                MaxRetryAttempts = 3,
+                BackoffType = DelayBackoffType.Exponential,
+                UseJitter = true,
+                Delay = TimeSpan.FromSeconds(1)
+            })
+            .AddTimeout(TimeSpan.FromSeconds(60))
+            .Build();
     }
+
+    private static bool IsTransient(RequestFailedException ex)
+        => ex.Status == 429 || ex.Status >= 500;
 
     public async Task<string> CompleteAsync(string systemPrompt, string userPrompt, CancellationToken ct = default)
     {
@@ -48,7 +72,14 @@ public class AzureAiFoundryCompletionService : IAiCompletionService
 
         try
         {
-            ChatCompletion completion = await _chatClient.CompleteChatAsync(messages, chatOptions, ct);
+            ChatCompletion completion = await _resiliencePipeline.ExecuteAsync(
+                async token =>
+                {
+                    var result = await _chatClient.CompleteChatAsync(messages, chatOptions, token);
+                    return result.Value;
+                },
+                ct);
+
             return completion.Content.Count > 0 ? completion.Content[0].Text : string.Empty;
         }
         catch (Exception ex)

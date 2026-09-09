@@ -42,6 +42,11 @@ else
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<JobApplyAI.Web.Services.CurrentUserService>();
 
+// Liveness probe for Azure Container Apps (used as the container's health/readiness check) -
+// deliberately anonymous and dependency-free so a probe failure always means "process is stuck",
+// never "AI/Cosmos happens to be unreachable right now".
+builder.Services.AddHealthChecks();
+
 var app = builder.Build();
 
 if (!entraConfigured)
@@ -74,6 +79,7 @@ if (entraConfigured)
 app.MapControllers();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
+app.MapHealthChecks("/healthz");
 
 app.Run();
 

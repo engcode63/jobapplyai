@@ -6,4 +6,7 @@
     <Project Path="src/JobApplyAI.Infrastructure/JobApplyAI.Infrastructure.csproj" />
     <Project Path="src/JobApplyAI.Web/JobApplyAI.Web.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/JobApplyAI.Application.Tests/JobApplyAI.Application.Tests.csproj" />
+  </Folder>
 </Solution>

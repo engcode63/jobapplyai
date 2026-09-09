@@ -309,6 +309,20 @@ resource webApp 'Microsoft.App/containerApps@2024-03-01' = {
             { name: 'Adzuna__AppKey', value: adzunaAppKey }
             { name: 'Jooble__ApiKey', value: joobleApiKey }
           ]
+          probes: [
+            {
+              type: 'Liveness'
+              httpGet: { path: '/healthz', port: 8080 }
+              initialDelaySeconds: 10
+              periodSeconds: 30
+            }
+            {
+              type: 'Readiness'
+              httpGet: { path: '/healthz', port: 8080 }
+              initialDelaySeconds: 5
+              periodSeconds: 15
+            }
+          ]
         }
       ]
       scale: { minReplicas: 1, maxReplicas: 3 }

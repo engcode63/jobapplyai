@@ -60,8 +60,14 @@ public static class InfrastructureServiceCollectionExtensions
 
         // Fan out job search across all legitimate providers - see SeekJobSearchProvider's
         // remarks on why Seek/LinkedIn scraping is deliberately not implemented.
-        services.AddHttpClient<IJobSearchProvider, AdzunaJobSearchProvider>();
-        services.AddHttpClient<IJobSearchProvider, JoobleJobSearchProvider>();
+        // AddStandardResilienceHandler wraps each call with a sensible default pipeline (retry
+        // with jittered backoff on transient failures/5xx/429, a per-attempt timeout, a total
+        // request timeout, and a circuit breaker) so a slow/flaky external job board API can't
+        // hang a search or cascade into repeated failures.
+        services.AddHttpClient<IJobSearchProvider, AdzunaJobSearchProvider>()
+            .AddStandardResilienceHandler();
+        services.AddHttpClient<IJobSearchProvider, JoobleJobSearchProvider>()
+            .AddStandardResilienceHandler();
         services.AddSingleton<IJobSearchProvider, SeekJobSearchProvider>();
 
         return services;

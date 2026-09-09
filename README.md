@@ -181,6 +181,20 @@ a Container Apps environment + Container App for the Blazor Server host, Applica
 and a shared user-assigned managed identity with RBAC access to both Cosmos DB and Azure OpenAI
 — no connection strings or API keys are provisioned; everything uses Managed Identity.
 
+## Testing
+
+```powershell
+dotnet test JobApplyAI.slnx
+```
+
+`tests/JobApplyAI.Application.Tests` (NUnit + Moq + FluentAssertions) covers the Application
+layer's business logic — resume tailoring, cover letter generation, interview prep, application
+tracking, and job search fan-out/merge — against mocked AI/repository dependencies, so it runs
+without any Azure resources. The suite also exercises `JobSearchService`'s provider-isolation
+behaviour: if one job board API throws, the others still return results instead of failing the
+whole search. `dotnet test` is wired into CI (`.github/workflows/ci.yml`) and runs on every push/PR
+to `main`.
+
 ## Remaining/known work before this is fully "production ready"
 
 - **Functions API auth**: ✅ **implemented.** `JwtBearerAuthenticationMiddleware` validates Entra
@@ -190,12 +204,25 @@ and a shared user-assigned managed identity with RBAC access to both Cosmos DB a
   user's data, even with a valid token. Configure `EntraExternalId:Authority` and
   `EntraExternalId:Audience` (see below) to activate; until then, requests are rejected with 401
   by design (fail closed, not fail open).
+- **Resilience**: ✅ **implemented.** The Adzuna/Jooble HTTP clients use
+  `Microsoft.Extensions.Http.Resilience`'s standard pipeline (retry with jittered backoff on
+  transient failures/5xx/429, per-attempt and total timeouts, circuit breaker). The Azure AI
+  Foundry chat client has its own Polly retry pipeline (3 attempts, exponential backoff, 60s
+  overall timeout) for the same class of transient 429/5xx responses Azure OpenAI returns under
+  load.
+- **Health checks**: ✅ **implemented.** `JobApplyAI.Web` exposes `GET /healthz` (ASP.NET Core
+  health checks, wired into the Container App's liveness/readiness probes in `main.bicep`).
+  `JobApplyAI.Functions` exposes an anonymous `GET /api/health` that also reports whether
+  Cosmos/AI Foundry are running against real config or demo-mode fallbacks.
+- **Automated tests**: ✅ **implemented** for the Application layer (see Testing, above).
+  Integration tests against real/emulated Cosmos DB containers are not yet written.
+- **CI/CD pipeline**: ✅ **build+test implemented** (`.github/workflows/ci.yml`, runs on every
+  push/PR to `main`). Container image build/push and Bicep deployment automation are not yet
+  wired up.
 - **Job search provider**: implement real Seek/Indeed integration once partner API access is
   secured (see above).
 - **Auto-fill browser extension**: separate project (Chrome/Edge extension, likely
   TypeScript/JS) — not part of this Blazor/Functions solution.
-- **Rate limiting / cost controls** on AI endpoints (Azure OpenAI calls are billed per token).
-- **CI/CD pipeline** (GitHub Actions/Azure DevOps) to build container images and deploy Bicep +
-  app code — not yet created.
-- **Automated tests** (unit tests for Application services, integration tests for Cosmos
-  repositories) — not yet created.
+- **Rate limiting / cost controls** on AI endpoints (Azure OpenAI calls are billed per token) —
+  not yet implemented; recommended before opening this up to unlimited public sign-ups.
+

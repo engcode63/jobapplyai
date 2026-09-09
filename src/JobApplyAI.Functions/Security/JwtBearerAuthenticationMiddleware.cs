@@ -59,6 +59,15 @@ public sealed class JwtBearerAuthenticationMiddleware : IFunctionsWorkerMiddlewa
             return;
         }
 
+        // The health probe is intentionally anonymous: Azure Container Apps/App Gateway/Front
+        // Door liveness checks can't present a user bearer token, and the endpoint itself
+        // exposes no user data.
+        if (httpRequestData.Url.AbsolutePath.TrimEnd('/').EndsWith("/health", StringComparison.OrdinalIgnoreCase))
+        {
+            await next(context);
+            return;
+        }
+
         if (!_options.RequireAuthentication)
         {
             _logger.LogWarning(
