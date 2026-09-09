@@ -1,0 +1,46 @@
+Azure AI Foundry setup - what I still need from you
+-----------------------------------------------------
+
+Quick note before this goes any further - the AI parts of the app (resume tailoring, cover
+letters, interview prep, pulling structured info out of a resume) are all just calling out to
+Azure AI Foundry / Azure OpenAI under the hood. None of that will actually work until we point
+it at a real resource. Here's what I need, whenever you get a chance:
+
+1. The endpoint
+   Either an existing Foundry project or a fresh Azure OpenAI resource - whichever you've
+   already got. Should look something like:
+   https://your-resource-name.openai.azure.com/
+   (if you're using the newer unified Foundry portal it'll give you a project endpoint instead,
+   that works fine too)
+
+2. A model that's actually deployed, and the deployment name
+   Not just "gpt-4o" - I mean the name you gave it when you deployed it under the Deployments
+   tab in AI Foundry / Azure OpenAI Studio. People usually name it the same as the model but not
+   always. If you haven't deployed anything yet, gpt-4o-mini is a solid pick for this - good
+   enough quality and won't rack up a huge bill while we're testing.
+
+3. How we're authenticating to it
+   My preference is managed identity - no keys floating around anywhere. If you deploy the
+   bicep template I put in infra/main.bicep it already grants the right role (Cognitive
+   Services OpenAI User) to the app's identity automatically, so you wouldn't need to do
+   anything extra there. If for some reason you'd rather just use an API key instead, that's
+   fine too, just drop it into AzureAiFoundry:ApiKey in the config (or better, Key Vault) and
+   it'll pick that up instead.
+
+4. Which region
+   Mostly matters for model availability and quota. If you don't have a preference the bicep
+   template just uses whatever region the resource group is in.
+
+5. Quota
+   Worth double checking you've actually got TPM (tokens-per-minute) quota for the model in
+   that region before we go live with it - Foundry deployments will just fail/throttle silently
+   otherwise if the subscription doesn't have enough allocated.
+
+Once you've got that sorted (or just run the bicep deployment, which sets all this up for you),
+the only thing left is updating the config with the endpoint + deployment name:
+- src/JobApplyAI.Web/appsettings.json
+- src/JobApplyAI.Functions/local.settings.json
+(or the Function App / Container App settings directly in Azure if you're not running locally -
+bicep already wires these up if you deploy through it)
+
+Ping me once you've got a resource/endpoint and I'll help wire it in and test it end to end.

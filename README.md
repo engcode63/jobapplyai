@@ -75,33 +75,7 @@ Until configured, each provider logs a warning and returns an empty list rather 
 panel on the Job Search page remains available regardless, and `SeekJobSearchProvider` stays as a
 stub ready to wire up real HTTP calls if/when Seek partner API access is obtained.
 
-## What I need from you: Azure AI Foundry configuration
-
-To make the AI features (tailoring, cover letters, interview prep, resume structuring) actually
-work, I need the following, either from an existing Azure AI Foundry project or a new one:
-
-1. **Azure AI Foundry project / Azure OpenAI resource endpoint**
-   e.g. `https://<your-resource>.openai.azure.com/` (or the Foundry project endpoint if using
-   the unified Foundry portal).
-2. **A deployed chat-capable model** (recommend `gpt-4o-mini` or `gpt-4o` for quality/cost
-   balance) and its **deployment name** (not the base model name — the name you gave the
-   deployment in the Foundry/Azure OpenAI Studio "Deployments" tab).
-3. **Authentication method** — recommended: grant the app's managed identity (see Bicep output
-   `managedIdentityClientId`) the **"Cognitive Services OpenAI User"** RBAC role on the resource
-   (the provided `infra/main.bicep` already does this for you if you deploy it as-is). If you'd
-   rather use an API key instead of Managed Identity, set `AzureAiFoundry:ApiKey` in
-   configuration/Key Vault — but Managed Identity is preferred for production (no secrets to
-   rotate/leak).
-4. Confirm which **Azure region** your Foundry resource should be provisioned in (affects model
-   availability/quota) — defaults to the resource group's region in the Bicep template.
-5. Confirm your **subscription's model quota** for the chosen chat model/region — Foundry
-   deployments can fail if there's insufficient Tokens-Per-Minute quota allocated.
-
-Once you provide these (or deploy `infra/main.bicep`, which provisions a Foundry resource and
-model deployment for you), update `src/JobApplyAI.Web/appsettings.json` /
-`src/JobApplyAI.Functions/local.settings.json` (or, in Azure, the Function App/Container App
-settings — already wired by the Bicep template) with the `AzureAiFoundry:Endpoint` and
-`AzureAiFoundry:ChatDeploymentName` values.
+> Azure AI Foundry setup notes have moved to `notes-azure-foundry-setup.txt` in the repo root.
 
 ## What I need from you: Microsoft Entra External ID configuration
 
