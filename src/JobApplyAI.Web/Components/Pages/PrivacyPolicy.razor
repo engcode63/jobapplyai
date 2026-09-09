@@ -1,0 +1,67 @@
+@page "/privacy-policy"
+
+<PageTitle>Privacy Policy · NextRoleAI</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">Privacy Policy</MudText>
+<MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-6">Last updated: @_lastUpdated</MudText>
+
+<MudPaper Class="pa-6" Elevation="1">
+    <MudText Typo="Typo.h6" Class="mb-2">What we collect</MudText>
+    <MudText Typo="Typo.body2" Class="mb-4">
+        When you use NextRoleAI, we store the information you give us directly - your uploaded
+        resumes, job postings you save or search for, generated cover letters, application
+        tracking status, and mock interview transcripts. This data is stored per-account in Azure
+        Cosmos DB and is not shared with, or visible to, other users of the app.
+    </MudText>
+
+    <MudText Typo="Typo.h6" Class="mb-2">How we use AI</MudText>
+    <MudText Typo="Typo.body2" Class="mb-4">
+        Resume tailoring, cover letter generation, and interview feedback are produced by sending
+        your resume text and job posting details to an Azure AI Foundry (Azure OpenAI) model
+        deployment. This processing happens within Microsoft Azure infrastructure and is not used
+        to train third-party models.
+    </MudText>
+
+    <MudText Typo="Typo.h6" Class="mb-2">Job search data</MudText>
+    <MudText Typo="Typo.body2" Class="mb-4">
+        Job search results are retrieved from third-party job aggregator APIs (Adzuna and
+        Jooble) based on the keywords and location you enter. Your search terms are sent to
+        these providers to perform the search; refer to their respective privacy policies for how
+        they handle that data.
+    </MudText>
+
+    <MudText Typo="Typo.h6" Class="mb-2">Advertising &amp; cookies</MudText>
+    <MudText Typo="Typo.body2" Class="mb-4">
+        This site may display ads served by Google AdSense. Google and its partners may use
+        cookies or similar technologies to serve ads based on your prior visits to this or other
+        websites. You can opt out of personalised advertising by visiting
+        <MudLink Href="https://adssettings.google.com" Target="_blank">Google's Ads Settings</MudLink>,
+        or generally at <MudLink Href="https://www.aboutads.info" Target="_blank">aboutads.info</MudLink>.
+        See <MudLink Href="https://policies.google.com/technologies/partner-sites" Target="_blank">
+            How Google uses information from sites or apps that use our services
+        </MudLink> for more detail.
+    </MudText>
+
+    <MudText Typo="Typo.h6" Class="mb-2">Authentication</MudText>
+    <MudText Typo="Typo.body2" Class="mb-4">
+        Sign-in is handled by Microsoft Entra External ID. We receive your name, email address,
+        and a unique account identifier from your chosen identity provider (email, Google,
+        Microsoft, or LinkedIn) - we never see or store your password.
+    </MudText>
+
+    <MudText Typo="Typo.h6" Class="mb-2">Data retention &amp; deletion</MudText>
+    <MudText Typo="Typo.body2" Class="mb-4">
+        Your data is retained for as long as your account is active. To request deletion of your
+        account and all associated data, contact us using the details below.
+    </MudText>
+
+    <MudText Typo="Typo.h6" Class="mb-2">Contact</MudText>
+    <MudText Typo="Typo.body2">
+        Questions about this policy or your data can be sent to the site operator via the contact
+        details published on this app's GitHub repository.
+    </MudText>
+</MudPaper>
+
+@code {
+    private readonly string _lastUpdated = DateTime.UtcNow.ToString("d MMMM yyyy");
+}

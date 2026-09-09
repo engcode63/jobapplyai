@@ -1,4 +1,7 @@
 @inherits LayoutComponentBase
+@using Microsoft.Extensions.Options
+@using JobApplyAI.Web.Services
+@inject IOptions<BuyMeACoffeeOptions> BuyMeACoffeeOptionsAccessor
 
 <MudThemeProvider Theme="_theme" IsDarkMode="false" />
 <MudPopoverProvider />
@@ -12,6 +15,14 @@
         <MudText Typo="Typo.h5" Class="ml-2">NextRole<span style="opacity:.75">AI</span></MudText>
         <MudSpacer />
         <MudText Typo="Typo.caption" Class="mr-4">Australia &amp; New Zealand</MudText>
+        @if (_buyMeACoffeeUrl is not null)
+        {
+            <MudButton Href="@_buyMeACoffeeUrl" Target="_blank" rel="noopener"
+                       Variant="Variant.Filled" Color="Color.Warning" Size="Size.Small"
+                       StartIcon="@Icons.Material.Filled.Coffee" Class="mr-2">
+                Buy me a coffee
+            </MudButton>
+        }
     </MudAppBar>
 
     <MudDrawer @bind-Open="_drawerOpen" Elevation="2" Variant="DrawerVariant.Mini" ClipMode="DrawerClipMode.Always">
@@ -22,11 +33,19 @@
         <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-6 pb-8">
             @Body
         </MudContainer>
+        <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="pb-4">
+            <MudDivider Class="mb-3" />
+            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                &copy; @DateTime.UtcNow.Year NextRoleAI ·
+                <MudLink Href="privacy-policy" Color="Color.Secondary">Privacy Policy</MudLink>
+            </MudText>
+        </MudContainer>
     </MudMainContent>
 </MudLayout>
 
 @code {
     private bool _drawerOpen = true;
+    private string? _buyMeACoffeeUrl;
 
     private readonly MudTheme _theme = new()
     {
@@ -43,4 +62,14 @@
             Default = new DefaultTypography { FontFamily = new[] { "Inter", "Segoe UI", "sans-serif" } }
         }
     };
+
+    protected override void OnInitialized()
+    {
+        var username = BuyMeACoffeeOptionsAccessor.Value.Username;
+        if (!string.IsNullOrWhiteSpace(username) && !username.Contains('<'))
+        {
+            _buyMeACoffeeUrl = $"https://www.buymeacoffee.com/{username}";
+        }
+    }
 }
+

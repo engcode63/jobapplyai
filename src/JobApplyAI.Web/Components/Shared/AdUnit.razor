@@ -1,0 +1,46 @@
+@using Microsoft.Extensions.Options
+@using Microsoft.AspNetCore.Hosting
+@inject IOptions<JobApplyAI.Web.Services.AdSenseOptions> AdSenseOptionsAccessor
+@inject IWebHostEnvironment Env
+
+@if (_configured)
+{
+    <div class="my-4">
+        <ins class="adsbygoogle"
+             style="display:block"
+             data-ad-client="@_publisherId"
+             data-ad-slot="@AdSlot"
+             data-ad-format="auto"
+             data-full-width-responsive="true"></ins>
+    </div>
+    <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+}
+else if (Env.IsDevelopment())
+{
+    @* Visible only in local/dev so the layout can be reviewed without a live AdSense account.
+       Renders nothing at all in production until GoogleAdSense:PublisherId + a real ad slot ID
+       (from the AdSense dashboard, replacing the "AdSlot" placeholder below) are configured. *@
+    <MudPaper Class="pa-4 my-4 d-flex align-center justify-center"
+              Style="border: 2px dashed var(--mud-palette-lines-default); min-height: 90px;">
+        <MudText Typo="Typo.caption" Color="Color.Secondary">
+            Ad space (@Label) — configure GoogleAdSense:PublisherId and a real ad unit slot ID to show a live ad here.
+        </MudText>
+    </MudPaper>
+}
+
+@code {
+    /// <summary>AdSense ad unit slot ID from the AdSense dashboard. The default is a placeholder.</summary>
+    [Parameter] public string AdSlot { get; set; } = "0000000000";
+
+    /// <summary>Human-readable label shown only on the dev-mode placeholder, e.g. "Job Search results".</summary>
+    [Parameter] public string Label { get; set; } = "ad";
+
+    private string? _publisherId;
+    private bool _configured;
+
+    protected override void OnInitialized()
+    {
+        _publisherId = AdSenseOptionsAccessor.Value.PublisherId;
+        _configured = !string.IsNullOrWhiteSpace(_publisherId) && !_publisherId.Contains('<');
+    }
+}

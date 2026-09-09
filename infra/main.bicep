@@ -46,6 +46,12 @@ param adzunaAppKey string = ''
 @secure()
 param joobleApiKey string = ''
 
+@description('Google AdSense Publisher ID (e.g. ca-pub-1234567890123456). Leave as the placeholder until an AdSense account is approved - ad slots quietly stay hidden until this is set.')
+param googleAdSensePublisherId string = '<your-ca-pub-id>'
+
+@description('Buy Me a Coffee page username (buymeacoffee.com/{username}). Leave as the placeholder to hide the tip button.')
+param buyMeACoffeeUsername string = '<your-buymeacoffee-username>'
+
 var resourceToken = '${appName}-${environmentName}'
 var tags = {
   application: 'JobApplyAI'
@@ -308,6 +314,8 @@ resource webApp 'Microsoft.App/containerApps@2024-03-01' = {
             { name: 'Adzuna__AppId', value: adzunaAppId }
             { name: 'Adzuna__AppKey', value: adzunaAppKey }
             { name: 'Jooble__ApiKey', value: joobleApiKey }
+            { name: 'GoogleAdSense__PublisherId', value: googleAdSensePublisherId }
+            { name: 'BuyMeACoffee__Username', value: buyMeACoffeeUsername }
           ]
           probes: [
             {

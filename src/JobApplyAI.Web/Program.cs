@@ -42,6 +42,14 @@ else
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<JobApplyAI.Web.Services.CurrentUserService>();
 
+// Buy Me a Coffee link + Google AdSense - both purely additive/monetization features that must
+// never block the app from running: leaving either section as its scaffold placeholder value
+// simply hides the corresponding UI (button/ad slot) rather than erroring.
+builder.Services.Configure<JobApplyAI.Web.Services.AdSenseOptions>(
+    builder.Configuration.GetSection(JobApplyAI.Web.Services.AdSenseOptions.SectionName));
+builder.Services.Configure<JobApplyAI.Web.Services.BuyMeACoffeeOptions>(
+    builder.Configuration.GetSection(JobApplyAI.Web.Services.BuyMeACoffeeOptions.SectionName));
+
 // Liveness probe for Azure Container Apps (used as the container's health/readiness check) -
 // deliberately anonymous and dependency-free so a probe failure always means "process is stuck",
 // never "AI/Cosmos happens to be unreachable right now".

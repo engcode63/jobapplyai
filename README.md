@@ -142,6 +142,38 @@ The middleware also enforces that the `{userId}` route segment on every per-user
 the token's `oid` claim, returning `403 Forbidden` on mismatch — this prevents a valid, authenticated
 user from accessing another user's data by editing the URL.
 
+## Monetization (Buy Me a Coffee + Google AdSense)
+
+Both are optional, config-driven, and follow the same "demo mode" convention as everything else
+here: leave the config as its placeholder and the corresponding UI just doesn't render, rather
+than breaking the app.
+
+**Buy Me a Coffee** — a small "Buy me a coffee" button appears in the top app bar, linking to
+`https://www.buymeacoffee.com/{BuyMeACoffee:Username}` in a new tab. Set your page's username in
+`BuyMeACoffee:Username` to turn it on.
+
+**Google AdSense** — set `GoogleAdSense:PublisherId` (from your AdSense dashboard, looks like
+`ca-pub-1234567890123456`) and the AdSense loader script is added site-wide automatically
+(`Components/App.razor`). Ad units are placed via a reusable `<AdUnit>` component on the pages
+where it makes the most sense not to disrupt the core workflow — after the main content, never
+in the middle of a form or the resume-tailoring flow:
+- Home dashboard (banner)
+- Job Search results (below the results grid)
+- Cover Letters, Applications pipeline, Interview Prep, and Resumes pages (bottom of each page)
+
+Each `<AdUnit AdSlot="..." Label="..." />` uses a placeholder `data-ad-slot` ID - once you create
+matching ad units in the AdSense dashboard, replace the placeholder slot IDs in the corresponding
+`.razor` files with your real ones. Until `GoogleAdSense:PublisherId` is set, running locally in
+Development shows a dashed-border "Ad space" placeholder box in each spot so you can review the
+layout; in Production the same unconfigured state renders nothing at all.
+
+**Before Google will approve an AdSense account**, they generally require: a live public URL
+(not a placeholder/parked domain), real content (this app qualifies once deployed), and a visible
+Privacy Policy — a basic one covering data collection, third-party AI/job-search processing, and
+AdSense's cookie/advertising disclosure is included at `/privacy-policy` and linked in the page
+footer. Review and adapt the wording for your own legal/compliance requirements before relying on
+it as a real privacy policy.
+
 ## Local development
 
 ```powershell
