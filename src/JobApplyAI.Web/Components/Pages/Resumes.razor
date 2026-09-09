@@ -1,0 +1,113 @@
+@page "/resumes"
+@using JobApplyAI.Application.Interfaces
+@using JobApplyAI.Web.Services
+@inject IResumeRepository ResumeRepo
+@inject IResumeParsingService ParsingService
+@inject CurrentUserService CurrentUser
+@inject ISnackbar Snackbar
+
+<PageTitle>Resumes · NextRoleAI</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">Resumes</MudText>
+
+<MudPaper Class="pa-6 mb-6" Elevation="1">
+    <MudText Typo="Typo.h6" Class="mb-2">Upload your master resume</MudText>
+    <MudText Typo="Typo.body2" Class="mb-4" Color="Color.Secondary">
+        PDF or plain text. This becomes the source resume used for AI tailoring per job application.
+    </MudText>
+    <MudFileUpload T="IBrowserFile" FilesChanged="OnFileSelectedAsync" Accept=".pdf,.txt">
+        <ActivatorContent>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.UploadFile"
+                       Disabled="_uploading">
+                @(_uploading ? "Uploading..." : "Choose file")
+            </MudButton>
+        </ActivatorContent>
+    </MudFileUpload>
+</MudPaper>
+
+@if (_resumes is null)
+{
+    <MudProgressCircular Indeterminate="true" />
+}
+else if (_resumes.Count == 0)
+{
+    <MudAlert Severity="Severity.Info">No resumes yet - upload one above to get started.</MudAlert>
+}
+else
+{
+    <MudTable Items="_resumes" Hover="true" Elevation="1">
+        <HeaderContent>
+            <MudTh>File name</MudTh>
+            <MudTh>Type</MudTh>
+            <MudTh>Uploaded</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="File name">@context.FileName</MudTd>
+            <MudTd DataLabel="Type">
+                <MudChip T="string" Size="Size.Small" Color="@(context.IsMaster ? Color.Primary : Color.Secondary)">
+                    @(context.IsMaster ? "Master" : "Tailored")
+                </MudChip>
+            </MudTd>
+            <MudTd DataLabel="Uploaded">@context.CreatedUtc.ToLocalTime().ToString("g")</MudTd>
+        </RowTemplate>
+    </MudTable>
+}
+
+@code {
+    private List<JobApplyAI.Core.Entities.Resume>? _resumes;
+    private bool _uploading;
+    private string _userId = CurrentUserService.DemoUserId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _userId = await CurrentUser.GetUserIdAsync();
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        try
+        {
+            var results = await ResumeRepo.ListByUserAsync(_userId);
+            _resumes = results.OrderByDescending(r => r.CreatedUtc).ToList();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Could not load resumes: {ex.Message}", Severity.Error);
+            _resumes = new();
+        }
+    }
+
+    private async Task OnFileSelectedAsync(IBrowserFile file)
+    {
+        if (file is null) return;
+        _uploading = true;
+        try
+        {
+            const long maxSize = 5 * 1024 * 1024; // 5MB
+            await using var stream = file.OpenReadStream(maxSize);
+            var (rawText, structured) = await ParsingService.ParseAsync(stream, file.Name);
+
+            var resume = new JobApplyAI.Core.Entities.Resume
+            {
+                UserId = _userId,
+                FileName = file.Name,
+                RawText = rawText,
+                Structured = structured,
+                IsMaster = true
+            };
+
+            await ResumeRepo.UpsertAsync(resume);
+            Snackbar.Add("Resume uploaded and parsed successfully.", Severity.Success);
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Upload failed: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _uploading = false;
+        }
+    }
+}

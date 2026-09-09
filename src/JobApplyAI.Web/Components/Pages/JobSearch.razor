@@ -1,0 +1,148 @@
+@page "/job-search"
+@using JobApplyAI.Application.Interfaces
+@using JobApplyAI.Application.Services
+@using JobApplyAI.Web.Services
+@inject JobSearchService SearchService
+@inject IJobPostingRepository JobPostingRepo
+@inject ApplicationTrackingService TrackingService
+@inject CurrentUserService CurrentUser
+@inject ISnackbar Snackbar
+
+<PageTitle>Job Search · NextRoleAI</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">Job Search — AU &amp; NZ</MudText>
+
+<MudPaper Class="pa-4 mb-6" Elevation="1">
+    <MudGrid>
+        <MudItem xs="12" sm="4">
+            <MudTextField @bind-Value="_keywords" Label="Keywords" Placeholder="e.g. Software Engineer" />
+        </MudItem>
+        <MudItem xs="12" sm="4">
+            <MudTextField @bind-Value="_location" Label="Location" Placeholder="e.g. Sydney NSW" />
+        </MudItem>
+        <MudItem xs="12" sm="2">
+            <MudSelect T="Region" @bind-Value="_region" Label="Region">
+                <MudSelectItem Value="Region.Australia">Australia</MudSelectItem>
+                <MudSelectItem Value="Region.NewZealand">New Zealand</MudSelectItem>
+            </MudSelect>
+        </MudItem>
+        <MudItem xs="12" sm="2" Class="d-flex align-center">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true"
+                       OnClick="SearchAsync" Disabled="_searching">
+                @(_searching ? "Searching..." : "Search")
+            </MudButton>
+        </MudItem>
+    </MudGrid>
+</MudPaper>
+
+@if (_searched && _results?.Count == 0)
+{
+    <MudAlert Severity="Severity.Warning" Class="mb-4">
+        No live results. Seek/Indeed AU &amp; NZ require a partner API agreement that hasn't been configured yet —
+        add a real provider implementation for <code>IJobSearchProvider</code> once credentials are available.
+        In the meantime, you can add a job posting manually below.
+    </MudAlert>
+}
+
+@if (_results is { Count: > 0 })
+{
+    <MudGrid>
+        @foreach (var job in _results)
+        {
+            <MudItem xs="12" md="6" lg="4">
+                <MudPaper Class="pa-4" Elevation="2">
+                    <MudText Typo="Typo.h6">@job.Title</MudText>
+                    <MudText Typo="Typo.subtitle2" Color="Color.Secondary">@job.Company · @job.Location</MudText>
+                    <MudButton Class="mt-2" Variant="Variant.Text" Color="Color.Primary"
+                               OnClick="@(() => SaveAndTrackAsync(job))">
+                        Save &amp; Track
+                    </MudButton>
+                </MudPaper>
+            </MudItem>
+        }
+    </MudGrid>
+}
+
+<MudExpansionPanels Class="mt-6">
+    <MudExpansionPanel Text="Add a job posting manually">
+        <MudGrid>
+            <MudItem xs="12" sm="6"><MudTextField @bind-Value="_manual.Title" Label="Job title" /></MudItem>
+            <MudItem xs="12" sm="6"><MudTextField @bind-Value="_manual.Company" Label="Company" /></MudItem>
+            <MudItem xs="12" sm="6"><MudTextField @bind-Value="_manual.Location" Label="Location" /></MudItem>
+            <MudItem xs="12" sm="6">
+                <MudSelect T="Region" @bind-Value="_manual.Region" Label="Region">
+                    <MudSelectItem Value="Region.Australia">Australia</MudSelectItem>
+                    <MudSelectItem Value="Region.NewZealand">New Zealand</MudSelectItem>
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12">
+                <MudTextField @bind-Value="_manual.Description" Label="Job description" Lines="6" />
+            </MudItem>
+            <MudItem xs="12">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="AddManualAsync">
+                    Add &amp; Track
+                </MudButton>
+            </MudItem>
+        </MudGrid>
+    </MudExpansionPanel>
+</MudExpansionPanels>
+
+@code {
+    private string _keywords = string.Empty;
+    private string _location = string.Empty;
+    private Region _region = Region.Australia;
+    private bool _searching;
+    private bool _searched;
+    private List<JobPosting>? _results;
+    private JobPosting _manual = new();
+    private string _userId = CurrentUserService.DemoUserId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _userId = await CurrentUser.GetUserIdAsync();
+        _manual.UserId = _userId;
+    }
+
+    private async Task SearchAsync()
+    {
+        _searching = true;
+        _searched = true;
+        try
+        {
+            _results = (await SearchService.SearchAsync(_keywords, _location, _region)).ToList();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Search failed: {ex.Message}", Severity.Error);
+            _results = new();
+        }
+        finally
+        {
+            _searching = false;
+        }
+    }
+
+    private async Task SaveAndTrackAsync(JobPosting job)
+    {
+        job.UserId = _userId;
+        var saved = await JobPostingRepo.UpsertAsync(job);
+        await TrackingService.CreateAsync(_userId, saved.Id);
+        Snackbar.Add("Added to your application tracker.", Severity.Success);
+    }
+
+    private async Task AddManualAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_manual.Title) || string.IsNullOrWhiteSpace(_manual.Company))
+        {
+            Snackbar.Add("Title and company are required.", Severity.Warning);
+            return;
+        }
+
+        _manual.UserId = _userId;
+        _manual.Source = "manual";
+        var saved = await JobPostingRepo.UpsertAsync(_manual);
+        await TrackingService.CreateAsync(_userId, saved.Id);
+        Snackbar.Add("Job added and tracked.", Severity.Success);
+        _manual = new() { UserId = _userId };
+    }
+}

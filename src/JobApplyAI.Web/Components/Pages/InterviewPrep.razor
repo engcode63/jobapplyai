@@ -1,0 +1,104 @@
+@page "/interview-prep"
+@using JobApplyAI.Application.Interfaces
+@using JobApplyAI.Application.Services
+@using JobApplyAI.Web.Services
+@inject IJobPostingRepository JobPostingRepo
+@inject InterviewPrepService InterviewService
+@inject CurrentUserService CurrentUser
+@inject ISnackbar Snackbar
+
+<PageTitle>Interview Prep · NextRoleAI</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">AI Mock Interview</MudText>
+
+@if (_session is null)
+{
+    <MudPaper Class="pa-4 mb-6" Elevation="1">
+        <MudText Typo="Typo.subtitle1" Class="mb-2">Choose a job posting to practice for</MudText>
+        <MudSelect T="string" @bind-Value="_selectedJobId" Label="Job posting">
+            @foreach (var job in _jobPostings)
+            {
+                <MudSelectItem Value="@job.Id">@job.Title · @job.Company</MudSelectItem>
+            }
+        </MudSelect>
+        <MudButton Class="mt-3" Variant="Variant.Filled" Color="Color.Primary"
+                   Disabled="string.IsNullOrEmpty(_selectedJobId) || _busy" OnClick="StartAsync">
+            Start mock interview
+        </MudButton>
+    </MudPaper>
+}
+else
+{
+    var current = _session.Exchanges[^1];
+    <MudPaper Class="pa-4 mb-4" Elevation="2">
+        <MudText Typo="Typo.h6">Q@(_session.Exchanges.Count): @current.Question</MudText>
+        <MudTextField @bind-Value="_answer" Label="Your answer" Lines="5" Class="mt-3" />
+        <MudButton Class="mt-2" Variant="Variant.Filled" Color="Color.Primary" Disabled="_busy" OnClick="SubmitAnswerAsync">
+            Submit answer
+        </MudButton>
+    </MudPaper>
+
+    @foreach (var exchange in _session.Exchanges.Where(e => e.AiFeedback is not null).Reverse())
+    {
+        <MudPaper Class="pa-4 mb-3" Elevation="1">
+            <MudText Typo="Typo.subtitle2">@exchange.Question</MudText>
+            <MudText Typo="Typo.body2" Class="mt-1"><em>Your answer:</em> @exchange.UserAnswer</MudText>
+            <MudAlert Severity="Severity.Info" Class="mt-2">@exchange.AiFeedback</MudAlert>
+        </MudPaper>
+    }
+}
+
+@code {
+    private List<JobApplyAI.Core.Entities.JobPosting> _jobPostings = new();
+    private string? _selectedJobId;
+    private JobApplyAI.Core.Entities.InterviewSession? _session;
+    private string _answer = string.Empty;
+    private bool _busy;
+    private string _userId = CurrentUserService.DemoUserId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _userId = await CurrentUser.GetUserIdAsync();
+        _jobPostings = (await JobPostingRepo.ListByUserAsync(_userId)).ToList();
+    }
+
+    private async Task StartAsync()
+    {
+        if (_selectedJobId is null) return;
+        var job = _jobPostings.First(j => j.Id == _selectedJobId);
+        _busy = true;
+        try
+        {
+            _session = await InterviewService.StartSessionAsync(_userId, job);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Could not start interview: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task SubmitAnswerAsync()
+    {
+        if (_session is null || _selectedJobId is null) return;
+        var job = _jobPostings.First(j => j.Id == _selectedJobId);
+        _busy = true;
+        try
+        {
+            _session = await InterviewService.SubmitAnswerAsync(_session, job, _answer);
+            _answer = string.Empty;
+            _session = await InterviewService.NextQuestionAsync(_session, job);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"AI feedback failed: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}

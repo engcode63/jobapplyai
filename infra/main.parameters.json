@@ -1,0 +1,11 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "appName": { "value": "jobapplyai" },
+    "environmentName": { "value": "dev" },
+    "chatModelName": { "value": "gpt-4o-mini" },
+    "chatModelVersion": { "value": "2024-07-18" },
+    "webContainerImage": { "value": "mcr.microsoft.com/dotnet/samples:aspnetapp" }
+  }
+}

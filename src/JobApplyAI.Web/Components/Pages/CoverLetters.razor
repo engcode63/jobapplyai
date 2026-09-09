@@ -1,0 +1,51 @@
+@page "/cover-letters"
+@using JobApplyAI.Application.Interfaces
+@using JobApplyAI.Web.Services
+@inject ICoverLetterRepository CoverLetterRepo
+@inject IJobPostingRepository JobPostingRepo
+@inject CurrentUserService CurrentUser
+
+<PageTitle>Cover Letters · NextRoleAI</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">Cover Letters</MudText>
+
+@if (_letters is null)
+{
+    <MudProgressCircular Indeterminate="true" />
+}
+else if (_letters.Count == 0)
+{
+    <MudAlert Severity="Severity.Info">
+        No cover letters yet. Generate one from a tracked application on the Applications page.
+    </MudAlert>
+}
+else
+{
+    @foreach (var letter in _letters)
+    {
+        <MudPaper Class="pa-4 mb-4" Elevation="1">
+            <MudText Typo="Typo.subtitle1">@GetJobTitle(letter.JobPostingId)</MudText>
+            <MudText Typo="Typo.caption" Color="Color.Secondary">@letter.CreatedUtc.ToLocalTime().ToString("g")</MudText>
+            <MudDivider Class="my-2" />
+            <MudText Style="white-space: pre-wrap;">@letter.Content</MudText>
+        </MudPaper>
+    }
+}
+
+@code {
+    private List<JobApplyAI.Core.Entities.CoverLetter>? _letters;
+    private Dictionary<string, JobApplyAI.Core.Entities.JobPosting> _jobPostings = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var userId = await CurrentUser.GetUserIdAsync();
+        var letters = await CoverLetterRepo.ListByUserAsync(userId);
+        _letters = letters.OrderByDescending(l => l.CreatedUtc).ToList();
+
+        var postings = await JobPostingRepo.ListByUserAsync(userId);
+        _jobPostings = postings.ToDictionary(p => p.Id, p => p);
+    }
+
+    private string GetJobTitle(string jobPostingId) =>
+        _jobPostings.TryGetValue(jobPostingId, out var job) ? $"{job.Title} · {job.Company}" : "(job details unavailable)";
+}

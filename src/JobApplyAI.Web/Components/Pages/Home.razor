@@ -1,0 +1,82 @@
+@page "/"
+@using JobApplyAI.Application.Interfaces
+@using JobApplyAI.Web.Services
+@inject IJobApplicationRepository ApplicationRepo
+@inject IResumeRepository ResumeRepo
+@inject CurrentUserService CurrentUser
+
+<PageTitle>Dashboard · NextRoleAI</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-1">Welcome back 👋</MudText>
+<MudText Typo="Typo.body1" Class="mb-6" Color="Color.Secondary">
+    Your AI-powered job search co-pilot for Australia &amp; New Zealand.
+</MudText>
+
+<MudGrid>
+    <MudItem xs="12" sm="4">
+        <MudPaper Class="pa-4" Elevation="2">
+            <MudText Typo="Typo.subtitle2" Color="Color.Secondary">Master Resumes</MudText>
+            <MudText Typo="Typo.h3">@_resumeCount</MudText>
+            <MudButton Variant="Variant.Text" Color="Color.Primary" Href="resumes" Class="mt-2">Manage resumes</MudButton>
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="12" sm="4">
+        <MudPaper Class="pa-4" Elevation="2">
+            <MudText Typo="Typo.subtitle2" Color="Color.Secondary">Active Applications</MudText>
+            <MudText Typo="Typo.h3">@_applicationCount</MudText>
+            <MudButton Variant="Variant.Text" Color="Color.Primary" Href="applications" Class="mt-2">View pipeline</MudButton>
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="12" sm="4">
+        <MudPaper Class="pa-4" Elevation="2">
+            <MudText Typo="Typo.subtitle2" Color="Color.Secondary">Region</MudText>
+            <MudText Typo="Typo.h3">🇦🇺 / 🇳🇿</MudText>
+            <MudText Typo="Typo.caption">AU &amp; NZ job markets only</MudText>
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+<MudGrid Class="mt-6">
+    <MudItem xs="12" md="6">
+        <MudPaper Class="pa-6" Elevation="1">
+            <MudText Typo="Typo.h6" Class="mb-2">🚀 Get started</MudText>
+            <MudList T="string" Dense="true">
+                <MudListItem Icon="@Icons.Material.Filled.UploadFile" T="string">Upload your master resume</MudListItem>
+                <MudListItem Icon="@Icons.Material.Filled.Search" T="string">Search AU/NZ job boards</MudListItem>
+                <MudListItem Icon="@Icons.Material.Filled.AutoAwesome" T="string">Generate a tailored resume + cover letter</MudListItem>
+                <MudListItem Icon="@Icons.Material.Filled.RecordVoiceOver" T="string">Practice with an AI mock interview</MudListItem>
+            </MudList>
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="12" md="6">
+        <MudPaper Class="pa-6" Elevation="1">
+            <MudText Typo="Typo.h6" Class="mb-2">🔒 Privacy &amp; scope</MudText>
+            <MudText Typo="Typo.body2">
+                Job search, tailoring, and interview features are scoped to Australian and New
+                Zealand employers and job boards. Your resumes and application data are stored
+                per-user in Azure Cosmos DB and never shared across accounts.
+            </MudText>
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+@code {
+    private int _resumeCount;
+    private int _applicationCount;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var userId = await CurrentUser.GetUserIdAsync();
+        try
+        {
+            var resumes = await ResumeRepo.ListByUserAsync(userId);
+            var applications = await ApplicationRepo.ListByUserAsync(userId);
+            _resumeCount = resumes.Count(r => r.IsMaster);
+            _applicationCount = applications.Count;
+        }
+        catch
+        {
+            // Cosmos DB not yet provisioned/configured - show zeros rather than crash the dashboard.
+        }
+    }
+}

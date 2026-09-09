@@ -1,0 +1,34 @@
+# Build output
+bin/
+obj/
+out/
+
+# Visual Studio / Rider / VS Code
+.vs/
+.vscode/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.idea/
+
+# Azure Functions local runtime settings - may contain real secrets once configured
+local.settings.json
+
+# ASP.NET Core secrets
+appsettings.*.local.json
+secrets.json
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# NuGet
+*.nupkg
+.nuget/
+
+# Test results
+TestResults/

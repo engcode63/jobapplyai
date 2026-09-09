@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/JobApplyAI.Application/JobApplyAI.Application.csproj" />
+    <Project Path="src/JobApplyAI.Core/JobApplyAI.Core.csproj" />
+    <Project Path="src/JobApplyAI.Functions/JobApplyAI.Functions.csproj" />
+    <Project Path="src/JobApplyAI.Infrastructure/JobApplyAI.Infrastructure.csproj" />
+    <Project Path="src/JobApplyAI.Web/JobApplyAI.Web.csproj" />
+  </Folder>
+</Solution>

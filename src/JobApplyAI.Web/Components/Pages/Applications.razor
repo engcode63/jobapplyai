@@ -1,0 +1,143 @@
+@page "/applications"
+@using JobApplyAI.Application.Interfaces
+@using JobApplyAI.Application.Services
+@using JobApplyAI.Web.Services
+@inject ApplicationTrackingService TrackingService
+@inject IJobPostingRepository JobPostingRepo
+@inject IResumeRepository ResumeRepo
+@inject ResumeTailoringService TailoringService
+@inject CoverLetterService CoverLetterService
+@inject CurrentUserService CurrentUser
+@inject ISnackbar Snackbar
+
+<PageTitle>Applications · NextRoleAI</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">Application Pipeline</MudText>
+
+@if (_board is null)
+{
+    <MudProgressCircular Indeterminate="true" />
+}
+else
+{
+    <MudGrid>
+        @foreach (var status in _statuses)
+        {
+            <MudItem xs="12" sm="6" md="4" lg="3">
+                <MudPaper Class="pa-3" Elevation="1" Style="min-height: 220px;">
+                    <MudText Typo="Typo.subtitle1" Class="mb-2">@status</MudText>
+                    @foreach (var app in _board.Where(a => a.Status == status))
+                    {
+                        <MudCard Class="mb-2" Elevation="0" Outlined="true">
+                            <MudCardContent Class="pa-2">
+                                <MudText Typo="Typo.body2">@GetJobTitle(app.JobPostingId)</MudText>
+                                <MudSelect T="ApplicationStatus" Value="app.Status"
+                                           ValueChanged="@(s => ChangeStatusAsync(app, s))" Dense="true" Margin="Margin.Dense">
+                                    @foreach (var s in _statuses)
+                                    {
+                                        <MudSelectItem Value="s">@s</MudSelectItem>
+                                    }
+                                </MudSelect>
+                                <MudButtonGroup Class="mt-1" Size="Size.Small" Variant="Variant.Text">
+                                    <MudButton OnClick="@(() => GenerateTailoredResumeAsync(app))">Tailor resume</MudButton>
+                                    <MudButton OnClick="@(() => GenerateCoverLetterAsync(app))">Cover letter</MudButton>
+                                </MudButtonGroup>
+                            </MudCardContent>
+                        </MudCard>
+                    }
+                </MudPaper>
+            </MudItem>
+        }
+    </MudGrid>
+}
+
+@code {
+    private List<JobApplication>? _board;
+    private Dictionary<string, JobPosting> _jobPostings = new();
+    private Dictionary<string, Resume> _masterResumeByJob = new();
+    private string _userId = CurrentUserService.DemoUserId;
+
+    private readonly ApplicationStatus[] _statuses = Enum.GetValues<ApplicationStatus>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _userId = await CurrentUser.GetUserIdAsync();
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        try
+        {
+            var apps = await TrackingService.GetBoardAsync(_userId);
+            _board = apps.ToList();
+
+            var postings = await JobPostingRepo.ListByUserAsync(_userId);
+            _jobPostings = postings.ToDictionary(p => p.Id, p => p);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Could not load applications: {ex.Message}", Severity.Error);
+            _board = new();
+        }
+    }
+
+    private string GetJobTitle(string jobPostingId) =>
+        _jobPostings.TryGetValue(jobPostingId, out var job) ? $"{job.Title} · {job.Company}" : "(job details unavailable)";
+
+    private async Task ChangeStatusAsync(JobApplication app, ApplicationStatus newStatus)
+    {
+        await TrackingService.ChangeStatusAsync(app, newStatus);
+        await ReloadAsync();
+    }
+
+    private async Task GenerateTailoredResumeAsync(JobApplication app)
+    {
+        if (!_jobPostings.TryGetValue(app.JobPostingId, out var job)) return;
+
+        var resumes = await ResumeRepo.ListByUserAsync(_userId);
+        var master = resumes.FirstOrDefault(r => r.IsMaster);
+        if (master is null)
+        {
+            Snackbar.Add("Upload a master resume first.", Severity.Warning);
+            return;
+        }
+
+        try
+        {
+            var tailored = await TailoringService.TailorResumeAsync(master, job);
+            app.TailoredResumeId = tailored.Id;
+            await TrackingService.ChangeStatusAsync(app, app.Status);
+            Snackbar.Add("Tailored resume generated.", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"AI tailoring failed: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task GenerateCoverLetterAsync(JobApplication app)
+    {
+        if (!_jobPostings.TryGetValue(app.JobPostingId, out var job)) return;
+
+        var resumes = await ResumeRepo.ListByUserAsync(_userId);
+        var resume = resumes.FirstOrDefault(r => r.Id == app.TailoredResumeId) ?? resumes.FirstOrDefault(r => r.IsMaster);
+        if (resume is null)
+        {
+            Snackbar.Add("Upload a master resume first.", Severity.Warning);
+            return;
+        }
+
+        try
+        {
+            var letter = await CoverLetterService.GenerateAsync(resume, job);
+            app.CoverLetterId = letter.Id;
+            await TrackingService.ChangeStatusAsync(app, app.Status);
+            Snackbar.Add("Cover letter generated - see Cover Letters page.", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"AI cover letter generation failed: {ex.Message}", Severity.Error);
+        }
+    }
+}
