@@ -1,7 +1,6 @@
 # NextRoleAI
 
 An original AI-powered job-application assistant for the **Australia & New Zealand** market.
-Not a clone of any third-party product — built from scratch on Blazor Server + Azure Functions.
 
 > **Note on naming:** the product/display name is **NextRoleAI** (see the app bar, page titles,
 > and this README). The underlying solution, project files, and C# namespaces are still named
