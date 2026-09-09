@@ -10,19 +10,36 @@ An original AI-powered job-application assistant for the **Australia & New Zeala
 
 ## Architecture
 
-```
-JobApplyAI.Web (Blazor Server, MudBlazor UI, Azure Container Apps)
-JobApplyAI.Mobile (.NET MAUI, Android + iOS, talks to the same Functions API)
-JobApplyAI.Functions (Azure Functions isolated worker, .NET 8, HTTP API for external/mobile clients)
-        |
-        v
-JobApplyAI.Application (CQRS-ish services: tailoring, cover letters, interview prep, tracking)
-        |
-        v
-JobApplyAI.Infrastructure (Cosmos DB repositories, Azure AI Foundry client, resume parsing, job search adapters)
-        |
-        v
-JobApplyAI.Core (domain entities/enums, no external dependencies)
+```mermaid
+flowchart TB
+
+    subgraph Clients["Client Applications"]
+        WEB["JobApplyAI.Web<br/>Blazor Server<br/>MudBlazor<br/>Azure Container Apps"]
+        MOBILE["JobApplyAI.Mobile<br/>.NET MAUI<br/>Android / iOS"]
+    end
+
+    API["JobApplyAI.Functions<br/>Azure Functions (.NET 8)<br/>HTTP API"]
+
+    APP["JobApplyAI.Application<br/>CQRS-style Services<br/>Tailoring, Cover Letters,<br/>Interview Prep, Tracking"]
+
+    INFRA["JobApplyAI.Infrastructure<br/>Repositories, AI Clients,<br/>Resume Parsing, Job Search Adapters"]
+
+    CORE["JobApplyAI.Core<br/>Domain Entities<br/>Business Rules<br/>Enums"]
+
+    COSMOS["Azure Cosmos DB"]
+    AI["Azure AI Foundry"]
+    JOBS["External Job Boards"]
+
+    WEB --> API
+    MOBILE --> API
+
+    API --> APP
+    APP --> INFRA
+    INFRA --> CORE
+
+    INFRA --> COSMOS
+    INFRA --> AI
+    INFRA --> JOBS
 ```
 
 Both the Blazor Web host and the Functions host register **identical** Application/Infrastructure
