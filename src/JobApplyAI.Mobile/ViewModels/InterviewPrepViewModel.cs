@@ -86,6 +86,12 @@ public partial class InterviewPrepViewModel : ObservableObject
             Session = await _api.SubmitInterviewAnswerAsync(Session.Id, CurrentAnswer);
             CurrentAnswer = string.Empty;
             OnPropertyChanged(nameof(CurrentQuestion));
+
+            if (Session is { IsComplete: true })
+            {
+                await NotificationService.NotifyAsync(
+                    "Mock interview complete", "Your interview feedback is ready to review.");
+            }
         }
         catch (Exception ex)
         {

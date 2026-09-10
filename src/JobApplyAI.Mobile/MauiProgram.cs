@@ -2,6 +2,7 @@
 using JobApplyAI.Mobile.ViewModels;
 using JobApplyAI.Mobile.Views;
 using Microsoft.Extensions.Logging;
+using Plugin.LocalNotification;
 
 namespace JobApplyAI.Mobile;
 
@@ -12,13 +13,18 @@ public static class MauiProgram
 		var builder = MauiApp.CreateBuilder();
 		builder
 			.UseMauiApp<App>()
+			.UseLocalNotification()
 			.ConfigureFonts(fonts =>
 			{
 				fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
 				fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
 			});
 
-		builder.Services.AddHttpClient<NextRoleApiClient>();
+		builder.Services.AddSingleton<AuthService>();
+		builder.Services.AddTransient<AuthHeaderHandler>();
+		builder.Services
+			.AddHttpClient<NextRoleApiClient>()
+			.AddHttpMessageHandler<AuthHeaderHandler>();
 
 		builder.Services.AddTransient<DashboardViewModel>();
 		builder.Services.AddTransient<ResumesViewModel>();
@@ -43,3 +49,4 @@ public static class MauiProgram
 		return builder.Build();
 	}
 }
+

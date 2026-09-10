@@ -37,6 +37,7 @@ public partial class ApplicationsViewModel : ObservableObject
 
     [ObservableProperty] private bool _isBusy;
     [ObservableProperty] private string _statusMessage = string.Empty;
+    [ObservableProperty] private bool _isOffline;
 
     public ApplicationsViewModel(NextRoleApiClient api)
     {
@@ -48,35 +49,54 @@ public partial class ApplicationsViewModel : ObservableObject
     {
         IsBusy = true;
         StatusMessage = string.Empty;
+        IsOffline = false;
         try
         {
             var applications = await _api.GetApplicationsAsync();
             var postings = await _api.GetJobPostingsAsync();
-            var postingsById = postings.ToDictionary(p => p.Id);
-
-            Applications.Clear();
-            AvailablePostings.Clear();
-
-            var appliedPostingIds = applications.Select(a => a.JobPostingId).ToHashSet();
-
-            foreach (var app in applications.OrderByDescending(a => a.UpdatedUtc))
-            {
-                postingsById.TryGetValue(app.JobPostingId, out var posting);
-                Applications.Add(new ApplicationItem(app, posting));
-            }
-
-            foreach (var posting in postings.Where(p => !appliedPostingIds.Contains(p.Id)))
-            {
-                AvailablePostings.Add(posting);
-            }
+            PopulateFrom(applications, postings);
+            await OfflineCache.SaveAsync("applications", applications);
+            await OfflineCache.SaveAsync("job-postings", postings);
         }
         catch (Exception ex)
         {
-            StatusMessage = $"Couldn't load applications: {ex.Message}";
+            var cachedApps = await OfflineCache.LoadAsync<List<JobApplication>>("applications");
+            var cachedPostings = await OfflineCache.LoadAsync<List<JobPosting>>("job-postings");
+            if (cachedApps is { Count: > 0 } || cachedPostings is { Count: > 0 })
+            {
+                PopulateFrom(cachedApps ?? new(), cachedPostings ?? new());
+                IsOffline = true;
+                StatusMessage = "Showing your last-loaded applications - couldn't reach the API.";
+            }
+            else
+            {
+                StatusMessage = $"Couldn't load applications: {ex.Message}";
+            }
         }
         finally
         {
             IsBusy = false;
+        }
+    }
+
+    private void PopulateFrom(List<JobApplication> applications, List<JobPosting> postings)
+    {
+        var postingsById = postings.ToDictionary(p => p.Id);
+
+        Applications.Clear();
+        AvailablePostings.Clear();
+
+        var appliedPostingIds = applications.Select(a => a.JobPostingId).ToHashSet();
+
+        foreach (var app in applications.OrderByDescending(a => a.UpdatedUtc))
+        {
+            postingsById.TryGetValue(app.JobPostingId, out var posting);
+            Applications.Add(new ApplicationItem(app, posting));
+        }
+
+        foreach (var posting in postings.Where(p => !appliedPostingIds.Contains(p.Id)))
+        {
+            AvailablePostings.Add(posting);
         }
     }
 
@@ -122,6 +142,10 @@ public partial class ApplicationsViewModel : ObservableObject
             StatusMessage = resume is not null
                 ? "Tailored resume generated - check the Resumes tab."
                 : "Couldn't generate a tailored resume.";
+            if (resume is not null)
+            {
+                await NotificationService.NotifyAsync("Tailored resume ready", $"Your resume for \"{item.Title}\" has been tailored.");
+            }
         }
         catch (Exception ex)
         {
@@ -138,6 +162,10 @@ public partial class ApplicationsViewModel : ObservableObject
             StatusMessage = letter is not null
                 ? "Cover letter generated - check the Cover Letters tab."
                 : "Couldn't generate a cover letter.";
+            if (letter is not null)
+            {
+                await NotificationService.NotifyAsync("Cover letter ready", $"Your cover letter for \"{item.Title}\" is ready to review.");
+            }
         }
         catch (Exception ex)
         {

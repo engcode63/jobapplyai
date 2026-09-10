@@ -14,6 +14,7 @@ public partial class ResumesViewModel : ObservableObject
 
     [ObservableProperty] private bool _isBusy;
     [ObservableProperty] private string _statusMessage = string.Empty;
+    [ObservableProperty] private bool _isOffline;
 
     public ResumesViewModel(NextRoleApiClient api)
     {
@@ -24,6 +25,7 @@ public partial class ResumesViewModel : ObservableObject
     public async Task LoadAsync()
     {
         IsBusy = true;
+        IsOffline = false;
         try
         {
             var resumes = await _api.GetResumesAsync();
@@ -32,10 +34,25 @@ public partial class ResumesViewModel : ObservableObject
             {
                 Resumes.Add(resume);
             }
+            await OfflineCache.SaveAsync("resumes", resumes);
         }
         catch (Exception ex)
         {
-            StatusMessage = $"Couldn't load resumes: {ex.Message}";
+            var cached = await OfflineCache.LoadAsync<List<Resume>>("resumes");
+            if (cached is { Count: > 0 })
+            {
+                Resumes.Clear();
+                foreach (var resume in cached.OrderByDescending(r => r.CreatedUtc))
+                {
+                    Resumes.Add(resume);
+                }
+                IsOffline = true;
+                StatusMessage = "Showing your last-loaded resumes - couldn't reach the API.";
+            }
+            else
+            {
+                StatusMessage = $"Couldn't load resumes: {ex.Message}";
+            }
         }
         finally
         {

@@ -217,6 +217,25 @@ postings, tailor a resume, generate a cover letter, run a mock interview - all b
 resource exists. As soon as you fill in real Cosmos/AI Foundry/Entra values, the app
 transparently switches to the real backends with no code changes.
 
+### Configuring job search API keys locally
+
+`Adzuna:AppId`/`Adzuna:AppKey` (free tier at [developer.adzuna.com](https://developer.adzuna.com/))
+and `Jooble:ApiKey` (free tier at [jooble.org/api/about](https://jooble.org/api/about)) enable real
+AU/NZ job search results instead of an empty result set. **Never put real keys in
+`appsettings.json` or `local.settings.json` in this repo** - both files are committed with
+placeholders only. Instead:
+
+```powershell
+# Web app - stored outside the repo via the .NET Secret Manager
+cd src\JobApplyAI.Web
+dotnet user-secrets init
+dotnet user-secrets set "Adzuna:AppId" "<your-app-id>"
+dotnet user-secrets set "Adzuna:AppKey" "<your-app-key>"
+```
+
+For the Functions host, edit your local (gitignored) `src/JobApplyAI.Functions/local.settings.json`
+directly - it's excluded from git specifically so it's safe to put real keys there for local runs.
+
 ## Mobile app (Android + iOS)
 
 `src/JobApplyAI.Mobile` is a .NET MAUI app covering the same six core flows as the web app —
@@ -251,17 +270,52 @@ dotnet build -f net10.0-android
    saved via `Preferences` and takes effect immediately. There's a "Test connection" button that
    pings `/health` to confirm it's reachable.
 4. Like the web app, if the Functions host is running with `EntraExternalId:RequireAuthentication`
-   left `false`, everything works immediately as the same shared `demo-user` identity — no sign-in
-   screen exists in the mobile app yet (see below).
+   left `false`, everything works immediately as the same shared `demo-user` identity - real
+   sign-in is optional (see below), not required to try the app.
 
 **iOS build limitation:** this environment is Windows-only, so iOS/MacCatalyst can be restored
 (`dotnet restore`) but not fully built, packaged, or run here — that requires a Mac with Xcode, or
 a remote build service (GitHub Actions macOS runner, Codemagic, App Center, etc.). The project is
 otherwise iOS-ready; it just needs a Mac-based build step to produce an actual `.ipa`.
 
-**Not yet built:** real sign-in (would need a second, public-client Entra External ID app
-registration distinct from the Web app's confidential-client one, plus MSAL), push notifications,
-and offline caching. All are natural follow-ups once the demo-mode flows above are validated.
+### Real sign-in (MSAL + Entra External ID)
+
+The Settings page has an optional "Sign in" section. By default the app stays in demo mode (shared
+`demo-user` identity, matching the Web app's own fallback). To enable real per-user sign-in:
+
+1. Create a **second** Entra External ID app registration for the mobile app - it must be a
+   **public client** ("Mobile and desktop applications" platform), distinct from the Web app's
+   confidential-client registration (public clients can't hold a client secret safely). Register
+   the redirect URI `msal<your-client-id>://auth`.
+2. In the mobile app's Settings page, enter that registration's Client ID and the same CIAM
+   Authority URL used elsewhere (`https://<tenant>.ciamlogin.com/<tenant-id>/v2.0`), then tap
+   **Save Entra config** followed by **Sign in**.
+3. MSAL.NET launches an interactive system-browser/broker sign-in. On success, the app extracts the
+   `oid` claim from the resulting access token and uses it as the API's `{userId}` route segment
+   from then on - the same partition-key identity scheme the Web app and Functions API already
+   use - and attaches the token as a `Bearer` header on every subsequent API call via
+   `AuthHeaderHandler`. Tap **Sign out** to clear the session and return to demo mode.
+4. Leaving the Client ID/Authority as placeholders (the default) keeps sign-in disabled and the
+   app in demo mode - this follows the same "safe to leave unconfigured" convention used
+   throughout the rest of the solution.
+
+### Working offline
+
+Resumes, Applications, and Cover Letters are cached to a local JSON file
+(`FileSystem.AppDataDirectory`) after every successful load. If the API becomes unreachable (no
+signal, laptop asleep, etc.), those three pages fall back to the last-loaded cached data instead of
+an empty error screen, with a status message noting the data may be stale. This is a read-only
+"last known state" cache, not a sync engine - changes made while offline (uploads, status updates)
+still require connectivity and will show a clear error if attempted offline.
+
+### Notifications
+
+The app requests local (on-device) notification permission and posts a notification when a
+long-running AI action finishes while backgrounded: tailored resume generation, cover letter
+generation, and mock interview completion. These are **local notifications only** - true
+cross-device server push would require an Azure Notification Hub plus registered APNs (iOS) and
+FCM (Android) credentials, which aren't available in this environment; local notifications give a
+real "your result is ready" nudge without that extra infrastructure.
 
 ## Deploying infrastructure
 
@@ -321,6 +375,8 @@ to `main`.
 - **Rate limiting / cost controls** on AI endpoints (Azure OpenAI calls are billed per token) —
   not yet implemented; recommended before opening this up to unlimited public sign-ups.
 - **Mobile app**: ✅ **Android + iOS MAUI app implemented** (see "Mobile app" section above),
-  covering all six core web flows against the same Functions API. Real sign-in (MSAL), push
-  notifications, and offline caching are not yet built.
+  covering all six core web flows against the same Functions API, plus optional real sign-in
+  (MSAL + Entra External ID), offline caching of last-loaded data, and local notifications for
+  AI generation completion. True cross-device push notifications (Azure Notification Hub +
+  APNs/FCM) are not yet built - local notifications cover the "result is ready" nudge for now.
 

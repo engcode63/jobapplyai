@@ -14,6 +14,7 @@ public partial class CoverLettersViewModel : ObservableObject
 
     [ObservableProperty] private bool _isBusy;
     [ObservableProperty] private string _statusMessage = string.Empty;
+    [ObservableProperty] private bool _isOffline;
 
     public CoverLettersViewModel(NextRoleApiClient api)
     {
@@ -24,6 +25,7 @@ public partial class CoverLettersViewModel : ObservableObject
     public async Task LoadAsync()
     {
         IsBusy = true;
+        IsOffline = false;
         try
         {
             var letters = await _api.GetCoverLettersAsync();
@@ -32,10 +34,25 @@ public partial class CoverLettersViewModel : ObservableObject
             {
                 Letters.Add(letter);
             }
+            await OfflineCache.SaveAsync("cover-letters", letters);
         }
         catch (Exception ex)
         {
-            StatusMessage = $"Couldn't load cover letters: {ex.Message}";
+            var cached = await OfflineCache.LoadAsync<List<CoverLetter>>("cover-letters");
+            if (cached is { Count: > 0 })
+            {
+                Letters.Clear();
+                foreach (var letter in cached.OrderByDescending(l => l.CreatedUtc))
+                {
+                    Letters.Add(letter);
+                }
+                IsOffline = true;
+                StatusMessage = "Showing your last-loaded cover letters - couldn't reach the API.";
+            }
+            else
+            {
+                StatusMessage = $"Couldn't load cover letters: {ex.Message}";
+            }
         }
         finally
         {

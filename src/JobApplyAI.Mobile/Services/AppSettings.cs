@@ -22,6 +22,46 @@ public static class AppSettings
     /// identity used everywhere while EntraExternalId:RequireAuthentication is left false.</summary>
     public const string DemoUserId = "demo-user";
 
+    /// <summary>
+    /// Entra External ID (CIAM) public-client app registration details for real sign-in.
+    /// Placeholders here mean "not configured" - same convention used throughout the rest of
+    /// the solution (Cosmos/AI Foundry/Entra on the Web side): the feature degrades gracefully
+    /// (demo mode) rather than crashing when these are left blank.
+    /// </summary>
+    public const string PlaceholderClientId = "<your-mobile-app-registration-client-id>";
+    public const string PlaceholderAuthority = "https://<your-tenant-name>.ciamlogin.com/<your-tenant-id>/v2.0";
+
+    private const string EntraClientIdKey = "EntraClientId";
+    private const string EntraAuthorityKey = "EntraAuthority";
+    private const string EntraRedirectUriKey = "EntraRedirectUri";
+
+    public static string EntraClientId
+    {
+        get => Preferences.Default.Get(EntraClientIdKey, PlaceholderClientId);
+        set => Preferences.Default.Set(EntraClientIdKey, value);
+    }
+
+    public static string EntraAuthority
+    {
+        get => Preferences.Default.Get(EntraAuthorityKey, PlaceholderAuthority);
+        set => Preferences.Default.Set(EntraAuthorityKey, value);
+    }
+
+    /// <summary>MSAL's default broker/system-browser redirect URI pattern for public clients:
+    /// msal{ClientId}://auth - registered as a "Mobile and desktop applications" platform on the
+    /// app registration.</summary>
+    public static string EntraRedirectUri
+    {
+        get => Preferences.Default.Get(EntraRedirectUriKey, $"msal{EntraClientId}://auth");
+        set => Preferences.Default.Set(EntraRedirectUriKey, value);
+    }
+
+    /// <summary>True once a real (non-placeholder) Client ID and Authority have been configured -
+    /// same "IsConfigured" convention used for AdSense/Cosmos/AI Foundry elsewhere in this solution.</summary>
+    public static bool IsEntraConfigured =>
+        !string.IsNullOrWhiteSpace(EntraClientId) && !EntraClientId.Contains('<') &&
+        !string.IsNullOrWhiteSpace(EntraAuthority) && !EntraAuthority.Contains('<');
+
     public static string ApiBaseUrl
     {
         get => Preferences.Default.Get(ApiBaseUrlKey, DefaultApiBaseUrl);
